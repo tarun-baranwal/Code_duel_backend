@@ -133,7 +133,12 @@ const getUserProfile = asyncHandler(async (req, res) => {
 
   // Get session if available
   const sessionData = await leetcodeService.getUserSession(userId);
-
+  if(!sessionData){
+    return res.status(200).json({
+      success: false,
+      message: "No LeetCode session found. Please store your session first.",
+    });
+  }
   const profile = await leetcodeService.fetchUserProfile(username, sessionData);
 
   res.status(200).json({
