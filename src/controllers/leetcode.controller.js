@@ -43,11 +43,13 @@ const storeSession = asyncHandler(async (req, res) => {
 
   const { cookie, csrfToken, expiresAt } = req.body;
   const userId = req.user.id;
+  const leetcodeUsername = req.user.leetcodeUsername;
 
   // Validate session before storing
   try {
     const isValid = await leetcodeService.validateSession(
-      encrypt(JSON.stringify({ cookie, csrfToken }))
+      encrypt(JSON.stringify({ cookie, csrfToken })),
+      leetcodeUsername
     );
 
     if (!isValid) {
@@ -176,7 +178,7 @@ const testConnection = asyncHandler(async (req, res) => {
       username,
       hasSession: !!sessionData,
       submissionsFound: submissions.length,
-      submissions: submissions.slice(0, 5), // Return first 5 for testing
+      submissions: submissions// Return first 5 for testing
     },
   });
 });

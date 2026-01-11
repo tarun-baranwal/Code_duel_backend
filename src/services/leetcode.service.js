@@ -98,8 +98,6 @@ const USER_SUBMISSIONS_QUERY = `
  */
 const fetchUserSubmissions = async (
   leetcodeUsername,
-  startDate,
-  endDate,
   sessionData = null
 ) => {
   try {
@@ -132,7 +130,7 @@ const fetchUserSubmissions = async (
         query: RECENT_SUBMISSIONS_QUERY,
         variables: {
           username: leetcodeUsername,
-          limit: 100,
+          limit: 10,
         },
       },
       { headers, timeout: 10000 }
@@ -145,23 +143,11 @@ const fetchUserSubmissions = async (
 
     const submissions = response.data.data.recentAcSubmissionList || [];
 
-    // Filter submissions by date range
-    const startTimestamp = Math.floor(startDate.getTime() / 1000);
-    const endTimestamp = Math.floor(endDate.getTime() / 1000);
-
-    const filteredSubmissions = submissions.filter((sub) => {
-      const submissionTimestamp = parseInt(sub.timestamp);
-      return (
-        submissionTimestamp >= startTimestamp &&
-        submissionTimestamp <= endTimestamp
-      );
-    });
-
     logger.debug(
-      `Fetched ${filteredSubmissions.length} submissions for ${leetcodeUsername}`
+      `Fetched ${submissions.length} submissions for ${leetcodeUsername}`
     );
 
-    return filteredSubmissions;
+    return submissions;
   } catch (error) {
     // Handle rate limiting or network errors gracefully
     if (error.response && error.response.status === 429) {
@@ -273,16 +259,9 @@ const fetchSubmissionsForDate = async (
   date,
   sessionData = null
 ) => {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
 
   return await fetchUserSubmissions(
     leetcodeUsername,
-    startOfDay,
-    endOfDay,
     sessionData
   );
 };
@@ -505,13 +484,15 @@ const enrichSubmissionsWithMetadata = async (
  * @param {string} sessionData - Encrypted session data
  * @returns {Promise<boolean>} True if session is valid
  */
-const validateSession = async (sessionData) => {
+const validateSession = async (sessionData , leetcodeUsername) => {
   try {
     const data = await fetchLeetCodeData(
       USER_CALENDAR_QUERY,
-      { username: "test", year: new Date().getFullYear() },
+      { username: leetcodeUsername, year: new Date().getFullYear() },
       sessionData
     );
+    console.log(data);
+    console.log('tr' , !!data)
     return !!data;
   } catch (error) {
     logger.warn("Session validation failed:", error.message);
