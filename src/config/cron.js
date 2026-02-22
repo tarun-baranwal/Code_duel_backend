@@ -2,6 +2,7 @@ const cron = require("node-cron");
 const { config } = require("./env");
 const logger = require("../utils/logger");
 const evaluationService = require("../services/evaluation.service");
+const emailService = require("../services/email.service");
 
 class CronManager {
   constructor() {
@@ -39,6 +40,58 @@ class CronManager {
       name: "dailyEvaluation",
       job: dailyEvaluationJob,
     });
+
+    // Daily reminder job - runs every day at configured time (default: 6 PM)
+    if (config.emailEnabled) {
+      const dailyReminderJob = cron.schedule(
+        config.dailyReminderTime,
+        async () => {
+          logger.info("Starting daily reminder cron job");
+          try {
+            await emailService.sendDailyReminders();
+            logger.info("Daily reminders sent successfully");
+          } catch (error) {
+            logger.error("Daily reminder job failed:", error);
+          }
+        },
+        {
+          scheduled: true,
+          timezone: "UTC",
+        }
+      );
+
+      this.jobs.push({
+        name: "dailyReminder",
+        job: dailyReminderJob,
+      });
+
+      // Weekly summary job - runs every Sunday at configured time (default: 10 AM)
+      const weeklySummaryJob = cron.schedule(
+        config.weeklySummaryTime,
+        async () => {
+          logger.info("Starting weekly summary cron job");
+          try {
+            await emailService.sendWeeklySummaries();
+            logger.info("Weekly summaries sent successfully");
+          } catch (error) {
+            logger.error("Weekly summary job failed:", error);
+          }
+        },
+        {
+          scheduled: true,
+          timezone: "UTC",
+        }
+      );
+
+      this.jobs.push({
+        name: "weeklySummary",
+        job: weeklySummaryJob,
+      });
+
+      logger.info(
+        `Email cron jobs initialized. Daily reminder: ${config.dailyReminderTime}, Weekly summary: ${config.weeklySummaryTime}`
+      );
+    }
 
     logger.info(
       `Cron jobs initialized. Daily evaluation scheduled at: ${config.dailyEvaluationTime}`

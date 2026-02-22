@@ -3,6 +3,7 @@ const { prisma } = require("../config/prisma");
 const { generateToken } = require("../utils/jwt");
 const { AppError } = require("../middlewares/error.middleware");
 const logger = require("../utils/logger");
+const { sendWelcomeEmail } = require("./email.service");
 
 /**
  * Register a new user
@@ -52,6 +53,11 @@ const register = async (userData) => {
   const token = generateToken({ userId: user.id });
 
   logger.info(`New user registered: ${user.username} (${user.email})`);
+
+  // Send welcome email (non-blocking)
+  sendWelcomeEmail(user.email, user.username).catch((err) => {
+    logger.error(`Failed to send welcome email: ${err.message}`);
+  });
 
   return {
     user,

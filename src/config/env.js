@@ -25,6 +25,16 @@ const config = {
   // Cron Configuration
   cronEnabled: process.env.CRON_ENABLED === "true",
   dailyEvaluationTime: process.env.DAILY_EVALUATION_TIME || "0 1 * * *", // 1 AM daily
+  dailyReminderTime: process.env.DAILY_REMINDER_TIME || "0 18 * * *", // 6 PM daily
+  weeklySummaryTime: process.env.WEEKLY_SUMMARY_TIME || "0 10 * * 0", // Sunday 10 AM
+
+  // Email Configuration
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: parseInt(process.env.SMTP_PORT) || 587,
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  emailFrom: process.env.EMAIL_FROM || "Code Duel <noreply@codeduel.com>",
+  emailEnabled: process.env.EMAIL_ENABLED === "true",
 
   // CORS Configuration
   corsOrigin: process.env.CORS_ORIGIN || "*",
