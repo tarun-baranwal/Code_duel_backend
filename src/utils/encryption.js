@@ -1,104 +1,74 @@
-const crypto = require("crypto");
-const { config } = require("../config/env");
-
-// Algorithm and key derivation settings
-const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 16; // For GCM mode
-const SALT_LENGTH = 64;
-const TAG_LENGTH = 16;
-const KEY_LENGTH = 32;
-const ITERATIONS = 100000;
+const crypto = require('crypto');
 
 /**
- * Derive encryption key from master key
- * @param {string} salt - Salt for key derivation
- * @returns {Buffer} Derived key
+ * Advanced Cryptography Utility - Team T066
+ * Implements AES-256-GCM with Dynamic IV and Error Shielding.
  */
-const deriveKey = (salt) => {
-  return crypto.pbkdf2Sync(
-    config.encryptionKey,
-    salt,
-    ITERATIONS,
-    KEY_LENGTH,
-    "sha512"
-  );
+
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16; 
+
+// Functional approach ensures keys are loaded ONLY when needed 
+// (Prevents crashes if env is not yet loaded during require)
+const getEncryptionKey = () => {
+    const key = process.env.ENCRYPTION_KEY;
+    if (!key || key.length !== 64) {
+        throw new Error("Invalid ENCRYPTION_KEY: Must be 64-character hex.");
+    }
+    return Buffer.from(key, 'hex');
 };
 
 /**
- * Encrypt data using AES-256-GCM
- * @param {string} text - Plain text to encrypt
- * @returns {string} Encrypted data in format: salt:iv:authTag:encryptedData
+ * Encrypts plaintext into IV:AuthTag:Ciphertext format
  */
-const encrypt = (text) => {
-  const salt = crypto.randomBytes(SALT_LENGTH);
-  const key = deriveKey(salt);
-  const iv = crypto.randomBytes(IV_LENGTH);
-
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-
-  let encrypted = cipher.update(text, "utf8", "hex");
-  encrypted += cipher.final("hex");
-
-  const authTag = cipher.getAuthTag();
-
-  // Return format: salt:iv:authTag:encryptedData
-  return [
-    salt.toString("hex"),
-    iv.toString("hex"),
-    authTag.toString("hex"),
-    encrypted,
-  ].join(":");
-};
+function encrypt(text) {
+    if (!text) return null;
+    try {
+        const iv = crypto.randomBytes(IV_LENGTH);
+        const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
+        
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        
+        const authTag = cipher.getAuthTag().toString('hex');
+        
+        return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    } catch (error) {
+        console.error('Encryption Error [T066]:', error.message);
+        throw new Error('Encryption failed');
+    }
+}
 
 /**
- * Decrypt data using AES-256-GCM
- * @param {string} encryptedData - Encrypted data in format: salt:iv:authTag:encryptedData
- * @returns {string} Decrypted plain text
+ * Decrypts and validates the integrity of the data
  */
-const decrypt = (encryptedData) => {
-  const parts = encryptedData.split(":");
+function decrypt(combined) {
+    if (!combined || typeof combined !== 'string') return null;
+    
+    try {
+        const parts = combined.split(':');
+        if (parts.length !== 3) {
+            throw new Error("Invalid encrypted format");
+        }
 
-  if (parts.length !== 4) {
-    throw new Error("Invalid encrypted data format");
-  }
+        const [ivHex, authTagHex, encryptedText] = parts;
+        
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
+        
+        decipher.setAuthTag(authTag);
+        
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        
+        return decrypted;
+    } catch (error) {
+        // We log the error but don't crash the server. 
+        // We return null so the service can handle it gracefully.
+        console.error('Decryption Error [T066]: Check ENCRYPTION_KEY or data integrity.', error.message);
+        return null;
+    }
+}
 
-  const salt = Buffer.from(parts[0], "hex");
-  const iv = Buffer.from(parts[1], "hex");
-  const authTag = Buffer.from(parts[2], "hex");
-  const encrypted = parts[3];
-
-  const key = deriveKey(salt);
-
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-
-  let decrypted = decipher.update(encrypted, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-
-  return decrypted;
-};
-
-/**
- * Hash data using SHA-256
- * @param {string} data - Data to hash
- * @returns {string} Hex-encoded hash
- */
-const hash = (data) => {
-  return crypto.createHash("sha256").update(data).digest("hex");
-};
-
-/**
- * Generate random token
- * @param {number} length - Length of token in bytes (default: 32)
- * @returns {string} Hex-encoded random token
- */
-const generateRandomToken = (length = 32) => {
-  return crypto.randomBytes(length).toString("hex");
-};
-
-module.exports = {
-  encrypt,
-  decrypt,
-  hash,
-  generateRandomToken,
-};
+module.exports = { encrypt, decrypt };

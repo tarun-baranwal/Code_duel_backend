@@ -9,6 +9,7 @@ const authRoutes = require("./routes/auth.routes");
 const challengeRoutes = require("./routes/challenge.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const leetcodeRoutes = require("./routes/leetcode.routes");
+const { apiLimiter, authLimiter } = require('./middlewares/rateLimiter.middleware');
 
 /**
  * Initialize Express application
@@ -16,7 +17,14 @@ const leetcodeRoutes = require("./routes/leetcode.routes");
 const createApp = () => {
   const app = express();
 
-  // CORS configuration
+  // 1. Security Middlewares (Team T066 Implementation)
+  // Apply global rate limiting to all API routes
+  app.use('/api/', apiLimiter);
+  
+  // Apply strict limiting specifically to auth routes
+  app.use('/api/auth/', authLimiter);
+
+  // 2. CORS configuration
   app.use(
     cors({
       origin: config.corsOrigin,
@@ -24,7 +32,7 @@ const createApp = () => {
     })
   );
 
-  // Body parser middleware
+  // 3. Body parser middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
