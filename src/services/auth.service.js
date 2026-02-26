@@ -7,8 +7,6 @@ const { sendWelcomeEmail } = require("./email.service");
 
 /**
  * Register a new user
- * @param {Object} userData - User registration data
- * @returns {Object} User object and JWT token
  */
 const register = async (userData) => {
   const { email, username, password, leetcodeUsername } = userData;
@@ -40,13 +38,6 @@ const register = async (userData) => {
       password: hashedPassword,
       leetcodeUsername: leetcodeUsername || null,
     },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      leetcodeUsername: true,
-      createdAt: true,
-    },
   });
 
   // Generate JWT token
@@ -60,22 +51,28 @@ const register = async (userData) => {
   });
 
   return {
-    user,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      leetcodeUsername: user.leetcodeUsername,
+      createdAt: user.createdAt,
+    },
     token,
   };
 };
 
 /**
  * Login user
- * @param {string} emailOrUsername - Email or username
- * @param {string} password - User password
- * @returns {Object} User object and JWT token
  */
 const login = async (emailOrUsername, password) => {
-  // Find user by email or username
+  // Find user by email OR username
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
+      OR: [
+        { email: emailOrUsername },
+        { username: emailOrUsername },
+      ],
     },
   });
 
@@ -83,14 +80,14 @@ const login = async (emailOrUsername, password) => {
     throw new AppError("Invalid credentials", 401);
   }
 
-  // Verify password
+  // Compare password
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
     throw new AppError("Invalid credentials", 401);
   }
 
-  // Generate JWT token
+  // Generate token
   const token = generateToken({ userId: user.id });
 
   logger.info(`User logged in: ${user.username}`);
@@ -109,8 +106,6 @@ const login = async (emailOrUsername, password) => {
 
 /**
  * Get user profile
- * @param {string} userId - User ID
- * @returns {Object} User profile
  */
 const getProfile = async (userId) => {
   const user = await prisma.user.findUnique({
@@ -139,14 +134,11 @@ const getProfile = async (userId) => {
 
 /**
  * Update user profile
- * @param {string} userId - User ID
- * @param {Object} updateData - Data to update
- * @returns {Object} Updated user profile
  */
 const updateProfile = async (userId, updateData) => {
   const { leetcodeUsername, currentPassword, newPassword } = updateData;
 
-  // If changing password, verify current password
+  // If password change requested
   if (newPassword) {
     if (!currentPassword) {
       throw new AppError("Current password is required", 400);
@@ -155,6 +147,10 @@ const updateProfile = async (userId, updateData) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
 
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
@@ -165,7 +161,6 @@ const updateProfile = async (userId, updateData) => {
       throw new AppError("Current password is incorrect", 401);
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     const updatedUser = await prisma.user.update({
@@ -175,18 +170,17 @@ const updateProfile = async (userId, updateData) => {
         leetcodeUsername:
           leetcodeUsername !== undefined ? leetcodeUsername : undefined,
       },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        leetcodeUsername: true,
-        updatedAt: true,
-      },
     });
 
     logger.info(`User profile updated: ${updatedUser.username}`);
 
-    return updatedUser;
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      username: updatedUser.username,
+      leetcodeUsername: updatedUser.leetcodeUsername,
+      updatedAt: updatedUser.updatedAt,
+    };
   }
 
   // Update without password change
@@ -196,18 +190,17 @@ const updateProfile = async (userId, updateData) => {
       leetcodeUsername:
         leetcodeUsername !== undefined ? leetcodeUsername : undefined,
     },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      leetcodeUsername: true,
-      updatedAt: true,
-    },
   });
 
   logger.info(`User profile updated: ${updatedUser.username}`);
 
-  return updatedUser;
+  return {
+    id: updatedUser.id,
+    email: updatedUser.email,
+    username: updatedUser.username,
+    leetcodeUsername: updatedUser.leetcodeUsername,
+    updatedAt: updatedUser.updatedAt,
+  };
 };
 
 module.exports = {
