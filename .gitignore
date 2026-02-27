@@ -46,3 +46,22 @@ prisma/migrations/
 # Temporary files
 tmp/
 temp/
+
+# Lock files (use npm ci in CI/CD)
+package-lock.json
+
+# Test files and scripts
+test-*.js
+setup.ps1
+
+# Extra documentation (keep only README.md, CODE_OF_CONDUCT.md, CONTRIBUTING.md)
+BACKGROUND_JOBS.md
+PR_DOCUMENTATION.md
+QUICK_START.md
+SETUP_CHECKLIST.md
+SETUP_GUIDE.md
+*.backup
+
+# Agent and skills files
+.agents/
+skills-lock.json
