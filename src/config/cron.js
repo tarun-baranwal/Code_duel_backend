@@ -43,6 +43,7 @@ class CronManager {
     });
 
     // Token blacklist cleanup job - runs every hour to remove expired tokens
+    // This is essential for security and DB maintenance, so it runs with other core jobs
     const tokenCleanupJob = cron.schedule(
       "0 * * * *", // Every hour at minute 0
       async () => {
@@ -73,6 +74,8 @@ class CronManager {
       name: "tokenCleanup",
       job: tokenCleanupJob,
     });
+
+    logger.info("Core cron jobs initialized (daily evaluation, token cleanup)");
 
     // Daily reminder job - runs every day at configured time (default: 6 PM)
     if (config.emailEnabled) {
