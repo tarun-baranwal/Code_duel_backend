@@ -62,4 +62,11 @@ router.put(
   authController.updateProfile
 );
 
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user and blacklist token
+ * @access  Private
+ */
+router.post("/logout", authenticate, authController.logout);
+
 module.exports = router;

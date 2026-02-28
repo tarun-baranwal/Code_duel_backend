@@ -36,6 +36,26 @@ const validateLogin = [
 ];
 
 /**
+ * Validation middleware for forgot password
+ */
+const validateForgotPassword = [
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Valid email is required"),
+];
+
+/**
+ * Validation middleware for reset password
+ */
+const validateResetPassword = [
+  body("token").notEmpty().withMessage("Reset token is required"),
+  body("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("New password must be at least 6 characters"),
+];
+
+/**
  * Validation middleware for profile update
  */
 const validateUpdateProfile = [
@@ -222,6 +242,24 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Logout user and blacklist token
+ * POST /api/auth/logout
+ * @access  Private
+ */
+const logout = asyncHandler(async (req, res) => {
+  // Token is already verified and stored by middleware
+  const token = req.verifiedToken;
+  const userId = req.user.id;
+
+  await authService.blacklistToken(token, userId);
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -229,6 +267,7 @@ module.exports = {
   updateProfile,
   forgotPassword,
   resetPassword,
+  logout,
   validateRegister,
   validateLogin,
   validateForgotPassword,

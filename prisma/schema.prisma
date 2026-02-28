@@ -168,6 +168,16 @@ model ChallengeInvite {
   @@map("challenge_invites")
 }
 
+model TokenBlacklist {
+  id                String           @id @default(uuid())
+  token             String           @unique
+  expiresAt         DateTime
+  createdAt         DateTime         @default(now())
+  
+  @@index([expiresAt])
+  @@map("token_blacklist")
+}
+
 enum ChallengeStatus {
   PENDING
   ACTIVE
