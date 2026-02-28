@@ -170,8 +170,18 @@ const parseSubmissions = async (submissions) => {
  * @returns {Array} Submissions for the date
  */
 const fetchSubmissionsForDate = async (leetcodeUsername, date) => {
+  const submissions = await fetchUserSubmissions(leetcodeUsername);
 
-  return await fetchUserSubmissions(leetcodeUsername);
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const nextDate = new Date(targetDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+
+  return submissions.filter((submission) => {
+    const submissionDate = new Date(parseInt(submission.timestamp, 10) * 1000);
+    return submissionDate >= targetDate && submissionDate < nextDate;
+  });
 };
 
 /**
