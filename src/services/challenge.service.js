@@ -27,8 +27,13 @@ const createChallenge = async (userId, challengeData) => {
   const end = new Date(endDate);
   const now = new Date();
 
-  if (start < now) {
-    throw new AppError("Start date must be in the future", 400);
+  // Compare dates at day level, not millisecond level
+  // Set time to start of day for comparison
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfStartDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+
+  if (startOfStartDate < startOfToday) {
+    throw new AppError("Start date must be today or in the future", 400);
   }
 
   if (end <= start) {
