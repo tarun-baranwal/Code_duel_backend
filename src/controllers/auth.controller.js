@@ -56,6 +56,7 @@ const validateResetPassword = [
     .withMessage("New password must be at least 6 characters"),
 
 /**
+
  * Validation middleware for profile update
  */
 const validateUpdateProfile = [
@@ -248,8 +249,17 @@ module.exports = {
   getProfile,
   updateProfile,
 
+
   validateRegister,
   validateLogin,
+
+  forgotPassword,
+  resetPassword,
+  validateRegister,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  validateUpdateProfile,
 
   forgotPassword,
   resetPassword,
